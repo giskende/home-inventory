@@ -19,16 +19,34 @@
     <input type="text" id="name" placeholder="Item Name" required />
 
     <select id="category">
-      <option value="">Loading categories...</option>
+      <option value="">Select Category</option>
+      <option value="Kids">Kids</option>
+      <option value="Grown ups">Grown ups</option>
+      <option value="Seasonal">Seasonal</option>
+      <option value="Other">Other</option>
     </select>
 
     <input type="number" id="quantity" placeholder="Quantity" />
 
     <select id="room">
-      <option value="">Loading rooms...</option>
+      <option value="">Select Room</option>
+      <option value="Living Room">Living Room</option>
+      <option value="Adult Bedroom">Adult Bedroom</option>
+      <option value="Kids Bedroom">Kids Bedroom</option>
+      <option value="Office/Guest Room">Office/Guest Room</option>
+      <option value="Hallway">Hallway</option>
+      <option value="Entryway">Entryway</option>
+      <option value="Balcony">Balcony</option>
+      <option value="Kitchen">Kitchen</option>
+      <option value="Bathroom">Bathroom</option>
+      <option value="Dining Room">Dining Room</option>
+      <option value="Basement">Basement</option>
     </select>
 
-    <input type="text" id="container" placeholder="Container" />
+    <select id="container">
+      <option value="">Select Container</option>
+    </select>
+
     <input type="text" id="spot" placeholder="Spot" />
     <input type="text" id="notes" placeholder="Notes" />
     <button type="submit">Add / Update</button>
@@ -48,48 +66,38 @@
   <div id="inventory"></div>
 
   <script>
-    const API_URL = 'https://script.google.com/macros/s/AKfycbz4e_92ANsbKvTMChzRxrkNrrdxoWvFygBJwSvpV6DvpzwGsutmyd0_1O1WyxvR0gReqg/exec';
+    const containerOptions = {
+      "Living Room": ["Couch", "Dresser", "Bookshelf", "Green Console"],
+      "Adult Bedroom": ["Wire closet", "Ben's dresser", "Gizem's dresser", "Built in closet"],
+      "Kids Bedroom": ["White closet", "Built in closet", "Dresser", "Cloth dresser"],
+      "Office/Guest Room": ["Built in closet", "Wooden tall dresser"],
+      "Hallway": ["Closet"],
+      "Entryway": ["Shoe rack", "Closet"],
+      "Balcony": [],
+      "Kitchen": ["Cabinets", "White Ikea Cabinet", "White Coffee Bar"],
+      "Bathroom": ["Mirror cabinet", "White cabinet", "Under sink cabinet"],
+      "Dining Room": ["Hutch", "Table", "Desk", "Nehir's containers"],
+      "Basement": []
+    };
+
+    function populateContainerDropdown(room) {
+      const containerSelect = document.getElementById('container');
+      containerSelect.innerHTML = '<option value="">Select Container</option>';
+      (containerOptions[room] || []).forEach(container => {
+        const option = document.createElement('option');
+        option.value = container;
+        option.textContent = container;
+        containerSelect.appendChild(option);
+      });
+    }
+
+    document.getElementById('room').addEventListener('change', (e) => {
+      populateContainerDropdown(e.target.value);
+    });
 
     async function fetchItems() {
       const res = await fetch(API_URL);
       return res.json();
-    }
-
-    async function fetchList(sheetName) {
-      const res = await fetch(`${API_URL}?sheet=${sheetName}`);
-      return res.json();
-    }
-
-    async function populateDropdown(id, values) {
-      const select = document.getElementById(id);
-      select.innerHTML = `<option value="">Select ${id.charAt(0).toUpperCase() + id.slice(1)}</option>`;
-
-      values.forEach(val => {
-        let displayValue = val;
-        if (typeof val === 'object' && val !== null) {
-          displayValue = Object.values(val)[0];
-        }
-        const option = document.createElement('option');
-        option.value = displayValue;
-        option.textContent = displayValue;
-        select.appendChild(option);
-      });
-    }
-
-    async function populateFilters(id, values) {
-      const select = document.getElementById(id);
-      select.innerHTML = `<option value="">All ${id.charAt(0).toUpperCase() + id.slice(1)}</option>`;
-
-      values.forEach(val => {
-        let displayValue = val;
-        if (typeof val === 'object' && val !== null) {
-          displayValue = Object.values(val)[0];
-        }
-        const option = document.createElement('option');
-        option.value = displayValue;
-        option.textContent = displayValue;
-        select.appendChild(option);
-      });
     }
 
     async function addOrUpdateItem(item) {
@@ -144,6 +152,7 @@
       document.getElementById('category').value = item["Category"] || '';
       document.getElementById('quantity').value = item["Quantity"] || '';
       document.getElementById('room').value = item["Room"] || '';
+      populateContainerDropdown(item["Room"] || '');
       document.getElementById('container').value = item["Container"] || '';
       document.getElementById('spot').value = item["Spot"] || '';
       document.getElementById('notes').value = item["Notes"] || '';
@@ -189,17 +198,6 @@
       renderItems(window._items || []);
     });
 
-    async function initDropdowns() {
-      const [categories, rooms] = await Promise.all([
-        fetchList('Categories'),
-        fetchList('Rooms')
-      ]);
-      await populateDropdown('category', categories);
-      await populateDropdown('room', rooms);
-      await populateFilters('roomFilter', rooms);
-    }
-
-    initDropdowns();
     loadAndRender();
   </script>
 </body>
