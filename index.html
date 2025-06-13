@@ -19,28 +19,13 @@
     <input type="text" id="name" placeholder="Item Name" required />
 
     <select id="category">
-      <option value="">Select Category</option>
-      <option>Kids</option>
-      <option>Grown ups</option>
-      <option>Seasonal</option>
-      <option>Other</option>
+      <option value="">Loading categories...</option>
     </select>
 
     <input type="number" id="quantity" placeholder="Quantity" />
 
     <select id="room">
-      <option value="">Select Room</option>
-      <option>Living Room</option>
-      <option>Adult Bedroom</option>
-      <option>Kids Bedroom</option>
-      <option>Office/Guest Room</option>
-      <option>Hallway</option>
-      <option>Entryway</option>
-      <option>Balcony</option>
-      <option>Kitchen</option>
-      <option>Bathroom</option>
-      <option>Dining Room</option>
-      <option>Basement</option>
+      <option value="">Loading rooms...</option>
     </select>
 
     <input type="text" id="container" placeholder="Container" />
@@ -55,17 +40,6 @@
   <h3>Filter by Location</h3>
   <select id="roomFilter">
     <option value="">All Rooms</option>
-      <option>Living Room</option>
-      <option>Adult Bedroom</option>
-      <option>Kids Bedroom</option>
-      <option>Office/Guest Room</option>
-      <option>Hallway</option>
-      <option>Entryway</option>
-      <option>Balcony</option>
-      <option>Kitchen</option>
-      <option>Bathroom</option>
-      <option>Dining Room</option>
-      <option>Basement</option>
   </select>
   <input type="text" id="containerFilter" placeholder="Filter by Container" />
   <input type="text" id="spotFilter" placeholder="Filter by Spot" />
@@ -79,6 +53,33 @@
     async function fetchItems() {
       const res = await fetch(API_URL);
       return res.json();
+    }
+
+    async function fetchList(sheetName) {
+      const res = await fetch(`${API_URL}?sheet=${sheetName}`);
+      return res.json();
+    }
+
+    async function populateDropdown(id, values) {
+      const select = document.getElementById(id);
+      select.innerHTML = `<option value="">Select ${id.charAt(0).toUpperCase() + id.slice(1)}</option>`;
+      values.forEach(val => {
+        const option = document.createElement('option');
+        option.value = val;
+        option.textContent = val;
+        select.appendChild(option);
+      });
+    }
+
+    async function populateFilters(id, values) {
+      const select = document.getElementById(id);
+      select.innerHTML = `<option value="">All ${id.charAt(0).toUpperCase() + id.slice(1)}</option>`;
+      values.forEach(val => {
+        const option = document.createElement('option');
+        option.value = val;
+        option.textContent = val;
+        select.appendChild(option);
+      });
     }
 
     async function addOrUpdateItem(item) {
@@ -119,7 +120,7 @@
         div.className = 'item';
         div.innerHTML = `
           <strong>${item["Item Name"] || '(No name)'}</strong> (${item.Quantity || 1})<br />
-          ${item.Room || ''} → ${item.Container || ''} → ${item.Spot || ''}<br />
+          ${(item.Room || '') + (item.Container ? ' → ' + item.Container : '') + (item.Spot ? ' → ' + item.Spot : '')}<br />
           <em>${item.Notes || ''}</em><br />
           <button onclick="fillForm(${JSON.stringify(item).replace(/"/g, '&quot;' )})">Edit</button>
           <button onclick="deleteAndRefresh('${item["Item Name"]}')">Delete</button>
@@ -178,6 +179,17 @@
       renderItems(window._items || []);
     });
 
+    async function initDropdowns() {
+      const [categories, rooms] = await Promise.all([
+        fetchList('Categories'),
+        fetchList('Rooms')
+      ]);
+      await populateDropdown('category', categories);
+      await populateDropdown('room', rooms);
+      await populateFilters('roomFilter', rooms);
+    }
+
+    initDropdowns();
     loadAndRender();
   </script>
 </body>
