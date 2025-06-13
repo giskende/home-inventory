@@ -2,9 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Home Inventory</title>
-  <link rel="manifest" href="manifest.json" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>🏠 Home Inventory</title>
   <style>
     body { font-family: sans-serif; max-width: 600px; margin: auto; padding: 1em; }
     input, select, button { padding: 0.5em; margin: 0.2em 0; width: 100%; box-sizing: border-box; }
@@ -12,6 +11,7 @@
     .item-buttons { display: flex; gap: 0.5em; margin-top: 0.5em; }
     .item-buttons button { flex: 1; }
     .group-heading { font-weight: bold; margin-top: 1em; background: #eee; padding: 0.5em; }
+    #exportBtn { margin: 1em 0; background: #4CAF50; color: white; border: none; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -20,7 +20,6 @@
   <h2>Add / Edit Item</h2>
   <form id="itemForm">
     <input type="text" id="name" placeholder="Item Name" required />
-
     <select id="category">
       <option value="">Select Category</option>
       <option value="Kids">Kids</option>
@@ -28,9 +27,7 @@
       <option value="Seasonal">Seasonal</option>
       <option value="Other">Other</option>
     </select>
-
-    <input type="number" id="quantity" placeholder="Quantity" />
-
+    <input type="number" id="quantity" placeholder="Quantity" min="1" />
     <select id="room">
       <option value="">Select Room</option>
       <option value="Living Room">Living Room</option>
@@ -45,11 +42,9 @@
       <option value="Dining Room">Dining Room</option>
       <option value="Basement">Basement</option>
     </select>
-
     <select id="container">
       <option value="">Select Container</option>
     </select>
-
     <input type="text" id="spot" placeholder="Spot" />
     <input type="text" id="notes" placeholder="Notes" />
     <button type="submit">Add / Update</button>
@@ -79,10 +74,12 @@
   <input type="text" id="spotFilter" placeholder="Filter by Spot" />
 
   <h2>Inventory</h2>
+  <button id="exportBtn">Export Inventory</button>
   <div id="inventory"></div>
 
   <script>
-    const API_URL = 'https://script.google.com/macros/s/AKfycbw4-eOer-nVgPwQOJMGuEZ2KRWBpSFb1BaeqolAaC7pNtQ63nBOeUREAZmGTY9VX48Jug/exec';
+    // Your deployed backend API URL here:
+    const API_URL = 'https://script.google.com/macros/s/AKfycbyWzxK5prLaeb9HXCbsW8pwmzl2D0KaKcywXhZRSPT1eyTfWVolx6GYHdVDTlvKbuQ0_Q/exec';
 
     const containerOptions = {
       "Living Room": ["Couch", "Dresser", "Bookshelf", "Green Console"],
@@ -98,6 +95,7 @@
       "Basement": ["All"]
     };
 
+    // Populate Container dropdown depending on Room selection
     function populateContainerDropdown(room, selectId = 'container') {
       const containerSelect = document.getElementById(selectId);
       containerSelect.innerHTML = '<option value="">' + (selectId === 'containerFilter' ? 'All Containers' : 'Select Container') + '</option>';
@@ -109,43 +107,34 @@
       });
     }
 
-    document.getElementById('room').addEventListener('change', (e) => {
-      populateContainerDropdown(e.target.value);
-    });
-
-    document.getElementById('roomFilter').addEventListener('change', (e) => {
+    document.getElementById('room').addEventListener('change', e => populateContainerDropdown(e.target.value));
+    document.getElementById('roomFilter').addEventListener('change', e => {
       populateContainerDropdown(e.target.value, 'containerFilter');
       renderItems(window._items || []);
     });
 
     async function fetchItems() {
       const res = await fetch(API_URL);
-      if (!res.ok) {
-        alert('Failed to load data from Google Sheets.');
-        return [];
-      }
       return res.json();
     }
 
     async function addOrUpdateItem(item) {
       item["Last Modified"] = new Date().toISOString();
-      const res = await fetch(`${API_URL}?action=add`, {
+      const response = await fetch(`${API_URL}?action=add`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(item)
       });
-      if (!res.ok) alert('Failed to add/update item.');
-      return res;
+      return response.text();
     }
 
     async function deleteItem(name) {
-      const res = await fetch(`${API_URL}?action=delete`, {
+      const response = await fetch(`${API_URL}?action=delete`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ "Item Name": name })
       });
-      if (!res.ok) alert('Failed to delete item.');
-      return res;
+      return response.text();
     }
 
     function renderItems(items) {
@@ -165,6 +154,7 @@
         return matchText && matchRoom && matchContainer && matchSpot;
       });
 
+      // Group by Room → Container
       const grouped = {};
       for (const item of filtered) {
         const key = `${item.Room || 'Uncategorized'} → ${item.Container || 'No Container'}`;
@@ -207,9 +197,10 @@
     }
 
     async function deleteAndRefresh(name) {
-      if (!confirm(`Delete item "${name}"?`)) return;
-      await deleteItem(name);
-      loadAndRender();
+      if(confirm(`Delete "${name}"?`)) {
+        await deleteItem(name);
+        await loadAndRender();
+      }
     }
 
     async function loadAndRender() {
@@ -218,30 +209,37 @@
       renderItems(items);
     }
 
-    document.getElementById('itemForm').addEventListener('submit', async (e) => {
+    document.getElementById('itemForm').addEventListener('submit', async e => {
       e.preventDefault();
       const item = {
-        "Item Name": document.getElementById('name').value,
+        "Item Name": document.getElementById('name').value.trim(),
         "Category": document.getElementById('category').value,
         "Quantity": document.getElementById('quantity').value,
         "Room": document.getElementById('room').value,
         "Container": document.getElementById('container').value,
-        "Spot": document.getElementById('spot').value,
-        "Notes": document.getElementById('notes').value
+        "Spot": document.getElementById('spot').value.trim(),
+        "Notes": document.getElementById('notes').value.trim()
       };
       await addOrUpdateItem(item);
-      loadAndRender();
+      await loadAndRender();
       document.getElementById('itemForm').reset();
     });
 
-    document.getElementById('searchBox').addEventListener('input', () => {
-      renderItems(window._items || []);
-    });
-    document.getElementById('containerFilter').addEventListener('change', () => {
-      renderItems(window._items || []);
-    });
-    document.getElementById('spotFilter').addEventListener('input', () => {
-      renderItems(window._items || []);
+    document.getElementById('searchBox').addEventListener('input', () => renderItems(window._items || []));
+    document.getElementById('containerFilter').addEventListener('change', () => renderItems(window._items || []));
+    document.getElementById('spotFilter').addEventListener('input', () => renderItems(window._items || []));
+
+    document.getElementById('exportBtn').addEventListener('click', () => {
+      const data = JSON.stringify(window._items || [], null, 2);
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'home_inventory.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     });
 
     loadAndRender();
