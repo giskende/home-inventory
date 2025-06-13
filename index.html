@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Home Inventory</title>
+  <link rel="manifest" href="manifest.json" />
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: auto; padding: 1em; }
+    input, select, button { padding: 0.5em; margin: 0.2em; width: 100%; }
+    .item { border-bottom: 1px solid #ccc; padding: 0.5em 0; }
+  </style>
+</head>
+<body>
+  <h1>🏠 Home Inventory</h1>
+
+  <h2>Add / Edit Item</h2>
+  <form id="itemForm">
+    <input type="text" id="name" placeholder="Item Name" required />
+    <input type="text" id="category" placeholder="Category" />
+    <input type="number" id="quantity" placeholder="Quantity" />
+    <input type="text" id="room" placeholder="Room" />
+    <input type="text" id="container" placeholder="Container" />
+    <input type="text" id="spot" placeholder="Spot" />
+    <input type="text" id="notes" placeholder="Notes" />
+    <button type="submit">Add / Update</button>
+  </form>
+
+  <h2>Search</h2>
+  <input type="text" id="searchBox" placeholder="Search item or container" />
+
+  <h2>Inventory</h2>
+  <div id="inventory"></div>
+
+  <script>
+    const API_URL = 'https://script.google.com/macros/s/AKfycbz4e_92ANsbKvTMChzRxrkNrrdxoWvFygBJwSvpV6DvpzwGsutmyd0_1O1WyxvR0gReqg/exec';
+
+    async function fetchItems() {
+      const res = await fetch(API_URL);
+      return res.json();
+    }
+
+    async function addOrUpdateItem(item) {
+      return fetch(`${API_URL}?action=add`, {
+        method: 'POST',
+        body: JSON.stringify(item),
+        contentType: 'application/json'
+      });
+    }
+
+    async function deleteItem(name) {
+      return fetch(`${API_URL}?action=delete`, {
+        method: 'POST',
+        body: JSON.stringify({ "Item Name": name }),
+        contentType: 'application/json'
+      });
+    }
+
+    function renderItems(items, filter = '') {
+      const container = document.getElementById('inventory');
+      container.innerHTML = '';
+      const filtered = items.filter(i =>
+        Object.values(i).some(val => val?.toString().toLowerCase().includes(filter.toLowerCase()))
+      );
+      for (const item of filtered) {
+        const div = document.createElement('div');
+        div.className = 'item';
+        div.innerHTML = `
+          <strong>${item["Item Name"]}</strong> (${item.Quantity})<br />
+          ${item.Room} → ${item.Container} → ${item.Spot}<br />
+          <em>${item.Notes || ''}</em><br />
+          <button onclick="fillForm(${JSON.stringify(item).replace(/"/g, '&quot;')})">Edit</button>
+          <button onclick="deleteAndRefresh('${item["Item Name"]}')">Delete</button>
+        `;
+        container.appendChild(div);
+      }
+    }
+
+    function fillForm(item) {
+      for (const key in item) {
+        const el = document.getElementById(key.toLowerCase());
+        if (el) el.value = item[key];
+      }
+    }
+
+    async function deleteAndRefresh(name) {
+      await deleteItem(name);
+      loadAndRender();
+    }
+
+    async function loadAndRender() {
+      const items = await fetchItems();
+      window._items = items;
+      renderItems(items);
+    }
+
+    document.getElementById('itemForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const item = {
+        "Item Name": document.getElementById('name').value,
+        "Category": document.getElementById('category').value,
+        "Quantity": document.getElementById('quantity').value,
+        "Room": document.getElementById('room').value,
+        "Container": document.getElementById('container').value,
+        "Spot": document.getElementById('spot').value,
+        "Notes": document.getElementById('notes').value
+      };
+      await addOrUpdateItem(item);
+      loadAndRender();
+      document.getElementById('itemForm').reset();
+    });
+
+    document.getElementById('searchBox').addEventListener('input', (e) => {
+      renderItems(window._items || [], e.target.value);
+    });
+
+    loadAndRender();
+  </script>
+</body>
+</html>
