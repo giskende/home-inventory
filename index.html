@@ -82,6 +82,8 @@
   <div id="inventory"></div>
 
   <script>
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzE2GohareqTJZpOMWtxhWYgIi3psrdKSubMQkNzwTUMdyeEmYr9G_2kNn0JmuePS87HA/exec';
+
     const containerOptions = {
       "Living Room": ["Couch", "Dresser", "Bookshelf", "Green Console"],
       "Adult Bedroom": ["Wire closet", "Ben's dresser", "Gizem's dresser", "Built in closet"],
@@ -118,24 +120,32 @@
 
     async function fetchItems() {
       const res = await fetch(API_URL);
+      if (!res.ok) {
+        alert('Failed to load data from Google Sheets.');
+        return [];
+      }
       return res.json();
     }
 
     async function addOrUpdateItem(item) {
       item["Last Modified"] = new Date().toISOString();
-      return fetch(`${API_URL}?action=add`, {
+      const res = await fetch(`${API_URL}?action=add`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(item)
       });
+      if (!res.ok) alert('Failed to add/update item.');
+      return res;
     }
 
     async function deleteItem(name) {
-      return fetch(`${API_URL}?action=delete`, {
+      const res = await fetch(`${API_URL}?action=delete`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ "Item Name": name })
       });
+      if (!res.ok) alert('Failed to delete item.');
+      return res;
     }
 
     function renderItems(items) {
@@ -176,7 +186,7 @@
             <em>${item.Notes || ''}</em><br />
             <small>Last Modified: ${item["Last Modified"] || 'N/A'}</small>
             <div class="item-buttons">
-              <button onclick="fillForm(${JSON.stringify(item).replace(/"/g, '&quot;' )})">Edit</button>
+              <button onclick="fillForm(${JSON.stringify(item).replace(/"/g, '&quot;')})">Edit</button>
               <button onclick="deleteAndRefresh('${item["Item Name"]}')">Delete</button>
             </div>
           `;
@@ -197,6 +207,7 @@
     }
 
     async function deleteAndRefresh(name) {
+      if (!confirm(`Delete item "${name}"?`)) return;
       await deleteItem(name);
       loadAndRender();
     }
