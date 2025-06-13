@@ -64,9 +64,10 @@
       const select = document.getElementById(id);
       select.innerHTML = `<option value="">Select ${id.charAt(0).toUpperCase() + id.slice(1)}</option>`;
       values.forEach(val => {
+        const strVal = typeof val === 'object' ? Object.values(val)[0] : val;
         const option = document.createElement('option');
-        option.value = val;
-        option.textContent = val;
+        option.value = strVal;
+        option.textContent = strVal;
         select.appendChild(option);
       });
     }
@@ -75,9 +76,10 @@
       const select = document.getElementById(id);
       select.innerHTML = `<option value="">All ${id.charAt(0).toUpperCase() + id.slice(1)}</option>`;
       values.forEach(val => {
+        const strVal = typeof val === 'object' ? Object.values(val)[0] : val;
         const option = document.createElement('option');
-        option.value = val;
-        option.textContent = val;
+        option.value = strVal;
+        option.textContent = strVal;
         select.appendChild(option);
       });
     }
@@ -180,21 +182,17 @@
     });
 
     async function initDropdowns() {
-    const [categoryData, roomData] = await Promise.all([
-      fetchList('Categories'),
-      fetchList('Rooms')
-    ]);
+      const [categoryData, roomData] = await Promise.all([
+        fetchList('Categories'),
+        fetchList('Rooms')
+      ]);
 
-    const categories = categoryData.map(row => row["Category"] || Object.values(row)[0]);
-    const rooms = roomData.map(row => row["Room"] || Object.values(row)[0]);
+      const categories = categoryData.map(row => row["Category"] || Object.values(row)[0]);
+      const rooms = roomData.map(row => row["Room"] || Object.values(row)[0]);
 
-    await populateDropdown('category', categories);
-    await populateDropdown('room', rooms);
-    await populateFilters('roomFilter', rooms);
-  }
-
-  initDropdowns();
-  loadAndRender();
+      await populateDropdown('category', categories);
+      await populateDropdown('room', rooms);
+      await populateFilters('roomFilter', rooms);
     }
 
     initDropdowns();
