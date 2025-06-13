@@ -7,7 +7,7 @@
   <link rel="manifest" href="manifest.json" />
   <style>
     body { font-family: sans-serif; max-width: 600px; margin: auto; padding: 1em; }
-    input, select, button { padding: 0.5em; margin: 0.2em; width: 100%; }
+    input, select, button { padding: 0.5em; margin: 0.2em 0; width: 100%; box-sizing: border-box; }
     .item { border-bottom: 1px solid #ccc; padding: 0.5em 0; }
   </style>
 </head>
@@ -17,9 +17,32 @@
   <h2>Add / Edit Item</h2>
   <form id="itemForm">
     <input type="text" id="name" placeholder="Item Name" required />
-    <input type="text" id="category" placeholder="Category" />
+
+    <select id="category">
+      <option value="">Select Category</option>
+      <option>Kids</option>
+      <option>Grown ups</option>
+      <option>Seasonal</option>
+      <option>Other</option>
+    </select>
+
     <input type="number" id="quantity" placeholder="Quantity" />
-    <input type="text" id="room" placeholder="Room" />
+
+    <select id="room">
+      <option value="">Select Room</option>
+      <option>Living Room</option>
+      <option>Adult Bedroom</option>
+      <option>Kids Bedroom</option>
+      <option>Office/Guest Room</option>
+      <option>Hallway</option>
+      <option>Entryway</option>
+      <option>Balcony</option>
+      <option>Kitchen</option>
+      <option>Bathroom</option>
+      <option>Dining Room</option>
+      <option>Basement</option>
+    </select>
+
     <input type="text" id="container" placeholder="Container" />
     <input type="text" id="spot" placeholder="Spot" />
     <input type="text" id="notes" placeholder="Notes" />
@@ -27,7 +50,25 @@
   </form>
 
   <h2>Search</h2>
-  <input type="text" id="searchBox" placeholder="Search item or container" />
+  <input type="text" id="searchBox" placeholder="Search item or keyword" />
+
+  <h3>Filter by Location</h3>
+  <select id="roomFilter">
+    <option value="">All Rooms</option>
+      <option>Living Room</option>
+      <option>Adult Bedroom</option>
+      <option>Kids Bedroom</option>
+      <option>Office/Guest Room</option>
+      <option>Hallway</option>
+      <option>Entryway</option>
+      <option>Balcony</option>
+      <option>Kitchen</option>
+      <option>Bathroom</option>
+      <option>Dining Room</option>
+      <option>Basement</option>
+  </select>
+  <input type="text" id="containerFilter" placeholder="Filter by Container" />
+  <input type="text" id="spotFilter" placeholder="Filter by Spot" />
 
   <h2>Inventory</h2>
   <div id="inventory"></div>
@@ -56,20 +97,31 @@
       });
     }
 
-    function renderItems(items, filter = '') {
+    function renderItems(items) {
+      const filter = document.getElementById('searchBox').value.toLowerCase();
+      const roomFilter = document.getElementById('roomFilter').value.toLowerCase();
+      const containerFilter = document.getElementById('containerFilter').value.toLowerCase();
+      const spotFilter = document.getElementById('spotFilter').value.toLowerCase();
+
       const container = document.getElementById('inventory');
       container.innerHTML = '';
-      const filtered = items.filter(i =>
-        Object.values(i).some(val => val?.toString().toLowerCase().includes(filter.toLowerCase()))
-      );
+
+      const filtered = items.filter(i => {
+        const matchText = Object.values(i).some(val => val?.toString().toLowerCase().includes(filter));
+        const matchRoom = !roomFilter || (i.Room || '').toLowerCase() === roomFilter;
+        const matchContainer = !containerFilter || (i.Container || '').toLowerCase().includes(containerFilter);
+        const matchSpot = !spotFilter || (i.Spot || '').toLowerCase().includes(spotFilter);
+        return matchText && matchRoom && matchContainer && matchSpot;
+      });
+
       for (const item of filtered) {
         const div = document.createElement('div');
         div.className = 'item';
         div.innerHTML = `
-          <strong>${item["Item Name"]}</strong> (${item.Quantity})<br />
-          ${item.Room} → ${item.Container} → ${item.Spot}<br />
+          <strong>${item["Item Name"] || '(No name)'}</strong> (${item.Quantity || 1})<br />
+          ${item.Room || ''} → ${item.Container || ''} → ${item.Spot || ''}<br />
           <em>${item.Notes || ''}</em><br />
-          <button onclick="fillForm(${JSON.stringify(item).replace(/"/g, '&quot;')})">Edit</button>
+          <button onclick="fillForm(${JSON.stringify(item).replace(/"/g, '&quot;' )})">Edit</button>
           <button onclick="deleteAndRefresh('${item["Item Name"]}')">Delete</button>
         `;
         container.appendChild(div);
@@ -77,10 +129,13 @@
     }
 
     function fillForm(item) {
-      for (const key in item) {
-        const el = document.getElementById(key.toLowerCase());
-        if (el) el.value = item[key];
-      }
+      document.getElementById('name').value = item["Item Name"] || '';
+      document.getElementById('category').value = item["Category"] || '';
+      document.getElementById('quantity').value = item["Quantity"] || '';
+      document.getElementById('room').value = item["Room"] || '';
+      document.getElementById('container').value = item["Container"] || '';
+      document.getElementById('spot').value = item["Spot"] || '';
+      document.getElementById('notes').value = item["Notes"] || '';
     }
 
     async function deleteAndRefresh(name) {
@@ -110,8 +165,17 @@
       document.getElementById('itemForm').reset();
     });
 
-    document.getElementById('searchBox').addEventListener('input', (e) => {
-      renderItems(window._items || [], e.target.value);
+    document.getElementById('searchBox').addEventListener('input', () => {
+      renderItems(window._items || []);
+    });
+    document.getElementById('roomFilter').addEventListener('change', () => {
+      renderItems(window._items || []);
+    });
+    document.getElementById('containerFilter').addEventListener('input', () => {
+      renderItems(window._items || []);
+    });
+    document.getElementById('spotFilter').addEventListener('input', () => {
+      renderItems(window._items || []);
     });
 
     loadAndRender();
