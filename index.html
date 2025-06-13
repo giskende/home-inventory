@@ -63,11 +63,15 @@
     async function populateDropdown(id, values) {
       const select = document.getElementById(id);
       select.innerHTML = `<option value="">Select ${id.charAt(0).toUpperCase() + id.slice(1)}</option>`;
+
       values.forEach(val => {
-        const strVal = typeof val === 'object' ? Object.values(val)[0] : val;
+        let displayValue = val;
+        if (typeof val === 'object' && val !== null) {
+          displayValue = Object.values(val)[0];
+        }
         const option = document.createElement('option');
-        option.value = strVal;
-        option.textContent = strVal;
+        option.value = displayValue;
+        option.textContent = displayValue;
         select.appendChild(option);
       });
     }
@@ -75,11 +79,15 @@
     async function populateFilters(id, values) {
       const select = document.getElementById(id);
       select.innerHTML = `<option value="">All ${id.charAt(0).toUpperCase() + id.slice(1)}</option>`;
+
       values.forEach(val => {
-        const strVal = typeof val === 'object' ? Object.values(val)[0] : val;
+        let displayValue = val;
+        if (typeof val === 'object' && val !== null) {
+          displayValue = Object.values(val)[0];
+        }
         const option = document.createElement('option');
-        option.value = strVal;
-        option.textContent = strVal;
+        option.value = displayValue;
+        option.textContent = displayValue;
         select.appendChild(option);
       });
     }
@@ -182,14 +190,10 @@
     });
 
     async function initDropdowns() {
-      const [categoryData, roomData] = await Promise.all([
+      const [categories, rooms] = await Promise.all([
         fetchList('Categories'),
         fetchList('Rooms')
       ]);
-
-      const categories = categoryData.map(row => row["Category"] || Object.values(row)[0]);
-      const rooms = roomData.map(row => row["Room"] || Object.values(row)[0]);
-
       await populateDropdown('category', categories);
       await populateDropdown('room', rooms);
       await populateFilters('roomFilter', rooms);
