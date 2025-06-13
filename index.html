@@ -119,7 +119,7 @@
     }
 
     async function addOrUpdateItem(item) {
-      item["Last Modified"] = new Date().toISOString();
+      // Removed "Last Modified" timestamp
       const response = await fetch(`${API_URL}?action=add`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -174,7 +174,6 @@
           div.innerHTML = `
             <strong>${item["Item Name"] || '(No name)'}</strong> (${item.Quantity || 1})<br />
             <em>${item.Notes || ''}</em><br />
-            <small>Last Modified: ${item["Last Modified"] || 'N/A'}</small>
             <div class="item-buttons">
               <button onclick="fillForm(${JSON.stringify(item).replace(/"/g, '&quot;')})">Edit</button>
               <button onclick="deleteAndRefresh('${item["Item Name"]}')">Delete</button>
