@@ -85,16 +85,16 @@
     async function addOrUpdateItem(item) {
       return fetch(`${API_URL}?action=add`, {
         method: 'POST',
-        body: JSON.stringify(item),
-        contentType: 'application/json'
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(item)
       });
     }
 
     async function deleteItem(name) {
       return fetch(`${API_URL}?action=delete`, {
         method: 'POST',
-        body: JSON.stringify({ "Item Name": name }),
-        contentType: 'application/json'
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ "Item Name": name })
       });
     }
 
