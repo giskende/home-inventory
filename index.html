@@ -180,13 +180,21 @@
     });
 
     async function initDropdowns() {
-      const [categories, rooms] = await Promise.all([
-        fetchList('Categories'),
-        fetchList('Rooms')
-      ]);
-      await populateDropdown('category', categories);
-      await populateDropdown('room', rooms);
-      await populateFilters('roomFilter', rooms);
+    const [categoryData, roomData] = await Promise.all([
+      fetchList('Categories'),
+      fetchList('Rooms')
+    ]);
+
+    const categories = categoryData.map(row => row["Category"] || Object.values(row)[0]);
+    const rooms = roomData.map(row => row["Room"] || Object.values(row)[0]);
+
+    await populateDropdown('category', categories);
+    await populateDropdown('room', rooms);
+    await populateFilters('roomFilter', rooms);
+  }
+
+  initDropdowns();
+  loadAndRender();
     }
 
     initDropdowns();
